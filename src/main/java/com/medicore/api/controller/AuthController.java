@@ -1,0 +1,83 @@
+package com.medicore.api.controller;
+
+import com.medicore.api.model.User;
+import com.medicore.api.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api")
+@CrossOrigin(origins = "*")
+public class AuthController {
+
+    @Autowired
+    private UserRepository userRepository;
+
+    // ── POST /api/auth  (login + body-based actions) ──────────────────────
+    @PostMapping("/auth")
+    public ResponseEntity<?> handleAuthPost(
+            @RequestParam(required = false) String action,
+            @RequestBody Map<String, String> body) {
+
+        String effectiveAction = action != null ? action : body.getOrDefault("action", "");
+
+        return switch (effectiveAction.toLowerCase()) {
+            case "login"  -> login(body.get("username"), body.get("password"));
+            case "logout" -> ResponseEntity.ok(Map.of("status", "success", "message", "Logged out"));
+            default       -> ResponseEntity.badRequest()
+                    .body(Map.of("status", "error", "message", "Unknown action: " + effectiveAction));
+        };
+    }
+
+    // ── GET /api/auth  (token verify) ─────────────────────────────────────
+    @GetMapping("/auth")
+    public ResponseEntity<?> handleAuthGet(
+            @RequestParam(required = false) String action,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        // Any GET with a token is treated as a valid session (stateless simple token)
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Token is valid"));
+        }
+
+        return ResponseEntity.status(401)
+                .body(Map.of("status", "error", "message", "No valid token provided"));
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+    private ResponseEntity<?> login(String username, String password) {
+        if (username == null || password == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("status", "error", "message", "Username and password are required"));
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(username.trim());
+
+        if (userOpt.isPresent() && userOpt.get().getPassword().equals(password)) {
+            User user = userOpt.get();
+            String token = UUID.randomUUID().toString();
+
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("id",       user.getId());
+            userData.put("name",     user.getName());
+            userData.put("username", user.getUsername());
+            userData.put("role",     user.getRole().name().toLowerCase());
+            userData.put("email",    user.getEmail() != null ? user.getEmail() : "");
+
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("token", token);
+            responseData.put("user",  userData);
+
+            return ResponseEntity.ok(Map.of("status", "success", "data", responseData));
+        }
+
+        return ResponseEntity.status(401)
+                .body(Map.of("status", "error", "message", "Invalid username or password"));
+    }
+}
