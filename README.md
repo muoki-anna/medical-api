@@ -1,8 +1,7 @@
 # MediCore Clinical API
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/java/java-original.svg" alt="Java" width="100" height="100" />
-  <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/spring/spring-original.svg" alt="Spring Boot" width="100" height="100" />
+  <img src="logo.png" alt="MediCore Logo" width="300" />
 </p>
 
 MediCore API is a robust clinical backend built with Java 17 and Spring Boot 3.
