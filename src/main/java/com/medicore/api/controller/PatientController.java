@@ -47,6 +47,29 @@ public class PatientController {
         return ResponseEntity.ok(response);
     }
 
+    /** Autocomplete endpoint — returns flat safe maps, max `limit` results */
+    @GetMapping("/patients/search")
+    public ResponseEntity<?> searchPatients(
+            @RequestParam String name,
+            @RequestParam(defaultValue = "8") int limit) {
+        List<Map<String, Object>> results = patientRepository
+                .findByNameContainingIgnoreCase(name.trim())
+                .stream()
+                .limit(Math.max(1, Math.min(limit, 50)))
+                .map(p -> {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("id", p.getId());
+                    m.put("name", p.getName());
+                    m.put("gender", p.getGender());
+                    m.put("bloodType", p.getBloodType());
+                    m.put("status", p.getStatus());
+                    return m;
+                })
+                .toList();
+        return ResponseEntity.ok(Map.of("status", "success", "data", results));
+    }
+
+
     @PostMapping("/patients")
     public ResponseEntity<?> savePatient(@RequestBody Map<String, String> body) {
         String idStr = body.get("id");

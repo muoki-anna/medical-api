@@ -39,7 +39,7 @@ public class StaffController {
             m.put("specialization", d.getSpecialization());
             m.put("email", d.getEmail());
             m.put("phone", d.getPhone());
-            m.put("ward", d.getWard() != null ? d.getWard().getName() : "N/A");
+            m.put("ward", d.getWard()); 
             m.put("status", d.getStatus());
             m.put("username", d.getUser() != null ? d.getUser().getUsername() : "");
             return m;
@@ -76,9 +76,11 @@ public class StaffController {
         doctor.setEmail(body.get("email"));
         doctor.setPhone(body.get("phone"));
         
-        String wardName = body.get("ward");
-        if (wardName != null) {
-            doctor.setWard(wardRepository.findByName(wardName).orElse(null));
+        String wardId = body.get("wardId");
+        if (wardId != null && !wardId.isEmpty()) {
+            doctor.setWard(wardRepository.findById(Long.parseLong(wardId)).orElse(null));
+        } else if (body.containsKey("wardId")) {
+            doctor.setWard(null);
         }
 
         doctorRepository.save(doctor);
@@ -106,7 +108,7 @@ public class StaffController {
             m.put("name", n.getName());
             m.put("email", n.getEmail());
             m.put("phone", n.getPhone());
-            m.put("ward", n.getWard() != null ? n.getWard().getName() : "N/A");
+            m.put("ward", n.getWard());
             m.put("shift", n.getShift());
             m.put("status", n.getStatus());
             m.put("username", n.getUser() != null ? n.getUser().getUsername() : "");
@@ -151,9 +153,11 @@ public class StaffController {
             }
         }
         
-        String wardName = body.get("ward");
-        if (wardName != null) {
-            nurse.setWard(wardRepository.findByName(wardName).orElse(null));
+        String wardId = body.get("wardId");
+        if (wardId != null && !wardId.isEmpty()) {
+            nurse.setWard(wardRepository.findById(Long.parseLong(wardId)).orElse(null));
+        } else if (body.containsKey("wardId")) {
+            nurse.setWard(null);
         }
 
         nurseRepository.save(nurse);

@@ -18,28 +18,36 @@ public class WardController {
     @Autowired
     private WardRepository wardRepository;
 
+    @Autowired
+    private com.medicore.api.repository.PatientRepository patientRepository;
+
     @GetMapping("/wards")
     public ResponseEntity<?> getWards() {
         List<Ward> wards = wardRepository.findAll();
+        List<com.medicore.api.model.Patient> allPatients = patientRepository.findAll();
         
-        // Enhance with mock beds for the UI visualization
+        // Enhance with real occupancy from the patient index
         List<Map<String, Object>> enhancedWards = wards.stream().map(w -> {
             Map<String, Object> map = new HashMap<>();
             String name = w.getName() != null ? w.getName() : "Ward";
-            int total = w.getCapacity() != null ? w.getCapacity() : 0;
-            int occupied = w.getOccupied() != null ? w.getOccupied() : 0;
-            int available = w.getAvailable() != null ? w.getAvailable() : total;
+            int capacity = w.getCapacity() != null ? w.getCapacity() : 20;
+            
+            // Calculate real occupancy
+            long occupied = allPatients.stream()
+                    .filter(p -> p.getWard() != null && p.getWard().getId().equals(w.getId()))
+                    .count();
+            int available = (int) (capacity - occupied);
 
             map.put("id", w.getId());
             map.put("name", name);
-            map.put("totalBeds", total); // Keep key as 'totalBeds' for frontend compatibility
+            map.put("totalBeds", capacity);
             map.put("occupied", occupied);
-            map.put("available", available);
+            map.put("available", Math.max(0, available));
             
             // Mock beds
             List<Map<String, String>> beds = new java.util.ArrayList<>();
             char prefix = name.length() > 0 ? name.charAt(name.length()-1) : 'U';
-            for (int i = 1; i <= total; i++) {
+            for (int i = 1; i <= capacity; i++) {
                 Map<String, String> bed = new HashMap<>();
                 bed.put("number", prefix + String.format("%02d", i));
                 bed.put("status", i <= occupied ? "occupied" : "available");

@@ -24,20 +24,22 @@ public class LabInventoryController {
         return ResponseEntity.ok(Map.of("status", "success", "data", items));
     }
 
-    @PostMapping("/sync")
-    public ResponseEntity<?> syncStock(@RequestBody Map<String, Object> body) {
-        Long id = Long.valueOf(body.get("id").toString());
-        Integer quantity = Integer.valueOf(body.get("quantity").toString());
-        
-        Inventory item = inventoryRepository.findById(id).orElseThrow();
-        item.setQuantity(quantity);
+    @PostMapping
+    public ResponseEntity<?> saveItem(@RequestBody Inventory item) {
+        if (item.getReorderLevel() == null) item.setReorderLevel(10);
         item.setUpdatedAt(LocalDateTime.now());
         
-        if (quantity == 0) item.setStatus("Out of Stock");
-        else if (quantity < item.getReorderLevel()) item.setStatus("Low");
+        if (item.getQuantity() == 0) item.setStatus("Out of Stock");
+        else if (item.getQuantity() < item.getReorderLevel()) item.setStatus("Low");
         else item.setStatus("In Stock");
         
-        inventoryRepository.save(item);
-        return ResponseEntity.ok(Map.of("status", "success", "message", "Stock levels synchronized"));
+        Inventory saved = inventoryRepository.save(item);
+        return ResponseEntity.ok(Map.of("status", "success", "data", saved));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<?> deleteItem(@RequestParam Long id) {
+        inventoryRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Item decommissioned"));
     }
 }

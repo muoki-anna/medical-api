@@ -2,6 +2,8 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.User;
 import com.medicore.api.repository.UserRepository;
+import com.medicore.api.repository.DoctorRepository;
+import com.medicore.api.repository.NurseRepository;
 import com.medicore.api.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,12 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    @Autowired
+    private NurseRepository nurseRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -74,6 +82,17 @@ public class AuthController {
             userData.put("username", user.getUsername());
             userData.put("role",     user.getRole().name().toLowerCase());
             userData.put("email",    user.getEmail() != null ? user.getEmail() : "");
+
+            // Include Ward Info for clinical roles
+            if (user.getRole() == User.Role.DOCTOR) {
+                doctorRepository.findByUser(user).ifPresent(d -> {
+                    if (d.getWard() != null) userData.put("ward", d.getWard());
+                });
+            } else if (user.getRole() == User.Role.NURSE) {
+                nurseRepository.findByUser(user).ifPresent(n -> {
+                    if (n.getWard() != null) userData.put("ward", n.getWard());
+                });
+            }
 
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("token", token);

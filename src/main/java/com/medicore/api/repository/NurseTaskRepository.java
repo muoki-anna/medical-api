@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface NurseTaskRepository extends JpaRepository<NurseTask, Long> {
     List<NurseTask> findByAssignedNurseId(Long nurseId);
+    List<NurseTask> findByAssignedNurseUserId(Long userId);
 }

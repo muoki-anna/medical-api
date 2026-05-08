@@ -4,6 +4,7 @@ import com.medicore.api.model.NurseTask;
 import com.medicore.api.model.Patient;
 import com.medicore.api.repository.NurseTaskRepository;
 import com.medicore.api.repository.PatientRepository;
+import com.medicore.api.repository.NurseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,29 +21,48 @@ import java.util.stream.Collectors;
 public class NurseTaskController {
 
     @Autowired
-    private NurseTaskRepository nurseTaskRepository;
-
-    @Autowired
     private PatientRepository patientRepository;
 
+    @Autowired
+    private NurseRepository nurseRepository;
+
+    @Autowired
+    private NurseTaskRepository nurseTaskRepository;
+
     @GetMapping("/nurse-tasks")
-    public ResponseEntity<?> getTasks(@RequestParam(required = false) Long nurseId) {
+    public ResponseEntity<?> getTasks(@RequestParam(required = false) String nurseId) {
+        System.out.println("[NurseTaskController] Fetching tasks for nurseId: " + nurseId);
         List<NurseTask> tasks;
-        if (nurseId != null) {
-            tasks = nurseTaskRepository.findByAssignedNurseId(nurseId);
-        } else {
+        try {
+            if (nurseId != null && !nurseId.isEmpty() && !nurseId.equals("undefined")) {
+                Long id = Long.parseLong(nurseId);
+                // Try finding by Nurse entity ID first, then by User ID
+                tasks = nurseTaskRepository.findByAssignedNurseUserId(id);
+                if (tasks.isEmpty()) {
+                    tasks = nurseTaskRepository.findByAssignedNurseId(id);
+                }
+            } else {
+                tasks = nurseTaskRepository.findAll();
+            }
+        } catch (Exception e) {
+            System.err.println("[NurseTaskController] Filter error: " + e.getMessage());
             tasks = nurseTaskRepository.findAll();
         }
+
+        System.out.println("[NurseTaskController] Found " + tasks.size() + " tasks");
 
         List<Map<String, Object>> result = tasks.stream().map(t -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", t.getId());
             m.put("taskCode", t.getTaskCode());
-            m.put("patient", t.getPatient() != null ? t.getPatient().getName() : "Unknown");
+            m.put("patient", t.getPatient() != null ? t.getPatient().getName() : "General Protocol");
             m.put("description", t.getDescription());
             m.put("dueTime", t.getDueTime() != null ? t.getDueTime().toString() : "ASAP");
             m.put("priority", t.getPriority());
-            m.put("column", t.getStatus()); // Keep 'column' key for frontend Kanban compatibility
+            // Sync status and column for frontend compatibility
+            String status = t.getStatus() != null ? t.getStatus() : "todo";
+            m.put("status", status);
+            m.put("column", status); 
             m.put("assignedNurse", t.getAssignedNurse() != null ? t.getAssignedNurse().getName() : "Unassigned");
             return m;
         }).collect(Collectors.toList());
@@ -69,11 +89,37 @@ public class NurseTaskController {
                 Patient patient = patientRepository.findById(Long.parseLong(body.get("patientId").toString())).orElse(null);
                 task.setPatient(patient);
             } else if (body.containsKey("patient") && body.get("patient") != null) {
-                String name = body.get("patient").toString();
-                patientRepository.findAll().stream()
-                    .filter(p -> p.getName().equalsIgnoreCase(name))
-                    .findFirst()
-                    .ifPresent(task::setPatient);
+                Object p = body.get("patient");
+                if (p instanceof Map) {
+                    Map<?, ?> pm = (Map<?, ?>) p;
+                    if (pm.containsKey("id")) {
+                        patientRepository.findById(Long.parseLong(pm.get("id").toString())).ifPresent(task::setPatient);
+                    }
+                } else {
+                    String name = p.toString();
+                    patientRepository.findAll().stream()
+                        .filter(pat -> pat.getName().equalsIgnoreCase(name))
+                        .findFirst()
+                        .ifPresent(task::setPatient);
+                }
+            }
+
+            // Handle Nurse Assignment
+            if (body.containsKey("nurseId") && body.get("nurseId") != null) {
+                Long uId = Long.parseLong(body.get("nurseId").toString());
+                // Try finding nurse by User ID first, then by Nurse ID
+                nurseRepository.findByUserId(uId)
+                    .ifPresentOrElse(task::setAssignedNurse, () -> {
+                        nurseRepository.findById(uId).ifPresent(task::setAssignedNurse);
+                    });
+            } else if (body.containsKey("assignedNurse") && body.get("assignedNurse") != null) {
+                Object n = body.get("assignedNurse");
+                if (n instanceof Map) {
+                    Map<?, ?> nm = (Map<?, ?>) n;
+                    if (nm.containsKey("id")) {
+                        nurseRepository.findById(Long.parseLong(nm.get("id").toString())).ifPresent(task::setAssignedNurse);
+                    }
+                }
             }
 
             task.setDescription(body.getOrDefault("description", "No description").toString());

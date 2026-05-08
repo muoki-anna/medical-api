@@ -134,6 +134,35 @@ public class AppointmentController {
         }
     }
 
+    @PatchMapping("/appointments/{id}/status")
+    public ResponseEntity<?> updateAppointmentStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return appointmentRepository.findById(id).<ResponseEntity<?>>map(appt -> {
+            String newStatus = body.get("status");
+            if (newStatus != null && !newStatus.isBlank()) {
+                appt.setStatus(newStatus);
+                appointmentRepository.save(appt);
+            }
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Appointment status updated to " + newStatus));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/appointments/{id}")
+    public ResponseEntity<?> updateAppointment(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        return appointmentRepository.findById(id).<ResponseEntity<?>>map(appt -> {
+            if (body.containsKey("status")) appt.setStatus((String) body.get("status"));
+            if (body.containsKey("reason")) appt.setReason((String) body.get("reason"));
+            if (body.containsKey("department")) appt.setDepartment((String) body.get("department"));
+            if (body.containsKey("date")) {
+                try { appt.setAppointmentDate(java.time.LocalDate.parse((String) body.get("date"))); } catch (Exception ignored) {}
+            }
+            if (body.containsKey("time")) {
+                try { appt.setAppointmentTime(java.time.LocalTime.parse((String) body.get("time"))); } catch (Exception ignored) {}
+            }
+            appointmentRepository.save(appt);
+            return ResponseEntity.ok(Map.of("status", "success", "message", "Appointment updated"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/appointments")
     public ResponseEntity<?> deleteAppointment(@RequestParam Long id) {
         appointmentRepository.deleteById(id);
