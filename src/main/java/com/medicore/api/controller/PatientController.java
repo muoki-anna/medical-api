@@ -2,10 +2,13 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.Patient;
 import com.medicore.api.model.User;
+import com.medicore.api.model.Activity;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.UserRepository;
 import com.medicore.api.model.Ward;
 import com.medicore.api.repository.WardRepository;
+import com.medicore.api.repository.ActivityRepository;
+import com.medicore.api.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +32,12 @@ public class PatientController {
     @Autowired
     private WardRepository wardRepository;
 
+    @Autowired
+    private DoctorRepository doctorRepository;
+
+    @Autowired
+    private ActivityRepository activityRepository;
+
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients() {
         List<Patient> patients = patientRepository.findAll();
@@ -43,8 +52,9 @@ public class PatientController {
         String idStr = body.get("id");
         Patient patient;
         User user;
+        boolean isNew = idStr == null || idStr.isEmpty();
 
-        if (idStr != null && !idStr.isEmpty()) {
+        if (!isNew) {
             patient = patientRepository.findById(Long.parseLong(idStr)).orElse(new Patient());
             user = patient.getUser();
         } else {
@@ -73,6 +83,11 @@ public class PatientController {
         patient.setEmail(body.get("email"));
         patient.setStatus(body.getOrDefault("status", "outpatient"));
         
+        // Auto-set admission date for tracking
+        if (patient.getAdmissionDate() == null) {
+            patient.setAdmissionDate(java.time.LocalDate.now());
+        }
+
         // Handle optional fields if they exist in frontend body
         if (body.containsKey("blood_type")) patient.setBloodType(body.get("blood_type"));
         if (body.containsKey("diagnosis")) patient.setDiagnosis(body.get("diagnosis"));
@@ -86,7 +101,23 @@ public class PatientController {
             patient.setWard(null); // Explicit removal
         }
 
+        // Handle doctor assignment
+        String doctorId = body.get("doctorId");
+        if (doctorId != null && !doctorId.isEmpty()) {
+            doctorRepository.findById(Long.parseLong(doctorId)).ifPresent(patient::setAssignedDoctor);
+        } else if (body.containsKey("doctorId")) {
+            patient.setAssignedDoctor(null); // Explicit removal
+        }
+
         patientRepository.save(patient);
+
+        // Log Activity
+        Activity activity = new Activity();
+        activity.setDescription(isNew ? "New patient registration: " + patient.getName() : "Patient record updated: " + patient.getName());
+        activity.setPatientName(patient.getName());
+        activity.setIcon(isNew ? "PlusIcon" : "EditIcon");
+        activityRepository.save(activity);
+
         return ResponseEntity.ok(Map.of("status", "success", "message", "Patient saved successfully"));
     }
 

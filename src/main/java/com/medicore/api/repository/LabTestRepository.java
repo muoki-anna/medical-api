@@ -8,5 +8,6 @@ import java.util.List;
 @Repository
 public interface LabTestRepository extends JpaRepository<LabTest, Long> {
     List<LabTest> findByPatientId(Long patientId);
+    List<LabTest> findByDoctorId(Long doctorId);
     long countByStatus(String status);
 }

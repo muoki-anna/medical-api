@@ -2,6 +2,7 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.User;
 import com.medicore.api.repository.UserRepository;
+import com.medicore.api.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -18,6 +18,9 @@ public class AuthController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // ── POST /api/auth  (login + body-based actions) ──────────────────────
     @PostMapping("/auth")
@@ -41,13 +44,15 @@ public class AuthController {
             @RequestParam(required = false) String action,
             @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
-        // Any GET with a token is treated as a valid session (stateless simple token)
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.ok(Map.of("status", "success", "message", "Token is valid"));
+            String token = authHeader.substring(7);
+            if (jwtUtil.isTokenValid(token)) {
+                return ResponseEntity.ok(Map.of("status", "success", "message", "Token is valid"));
+            }
         }
 
         return ResponseEntity.status(401)
-                .body(Map.of("status", "error", "message", "No valid token provided"));
+                .body(Map.of("status", "error", "message", "Session expired or invalid token"));
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
@@ -61,7 +66,7 @@ public class AuthController {
 
         if (userOpt.isPresent() && userOpt.get().getPassword().equals(password)) {
             User user = userOpt.get();
-            String token = UUID.randomUUID().toString();
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
 
             Map<String, Object> userData = new HashMap<>();
             userData.put("id",       user.getId());

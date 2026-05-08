@@ -20,8 +20,14 @@ public class LabPortalController {
     private LabTestRepository labTestRepository;
 
     @GetMapping("/queue")
-    public ResponseEntity<?> getQueue() {
-        List<LabTest> requests = labTestRepository.findAll();
+    public ResponseEntity<?> getQueue(@RequestParam(required = false) Long patientId) {
+        List<LabTest> requests;
+        if (patientId != null) {
+            requests = labTestRepository.findByPatientId(patientId);
+        } else {
+            requests = labTestRepository.findAll();
+        }
+        
         List<Map<String, Object>> result = requests.stream().map(r -> {
             Map<String, Object> m = new HashMap<>();
             m.put("id", r.getId());
@@ -31,6 +37,7 @@ public class LabPortalController {
             m.put("urgency", r.getUrgency());
             m.put("dateRequested", r.getDateRequested() != null ? r.getDateRequested().toString() : "");
             m.put("status", r.getStatus());
+            m.put("result", r.getResult());
             m.put("doctor", r.getDoctor() != null ? r.getDoctor().getName() : "Unknown");
             return m;
         }).collect(Collectors.toList());
