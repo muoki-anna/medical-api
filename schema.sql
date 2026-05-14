@@ -234,6 +234,14 @@ CREATE TABLE IF NOT EXISTS doctor_notes (
     FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
 );
 
+-- 17. Explicit Indexes (Optimization)
+CREATE INDEX idx_user_role ON users(role);
+CREATE INDEX idx_patient_status ON patients(status);
+CREATE INDEX idx_appointment_date ON appointments(appointment_date);
+CREATE INDEX idx_lab_test_status ON lab_tests(status);
+CREATE INDEX idx_activity_date ON activities(action_date);
+CREATE INDEX idx_billing_status ON billing(status);
+
 -- ==========================================
 -- SEEDING DATA
 -- ==========================================
