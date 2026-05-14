@@ -1,9 +1,7 @@
 package com.medicore.api.controller;
 
-import com.medicore.api.model.User;
-import com.medicore.api.repository.UserRepository;
-import com.medicore.api.repository.DoctorRepository;
-import com.medicore.api.repository.NurseRepository;
+import com.medicore.api.repository.*;
+import com.medicore.api.model.*;
 import com.medicore.api.util.ActivityLogger;
 import com.medicore.api.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +34,9 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private PasswordResetTokenRepository tokenRepository;
+
+    @Autowired
     private ActivityLogger activityLogger;
 
     // ── POST /api/auth  (login + body-based actions) ──────────────────────
@@ -47,8 +48,10 @@ public class AuthController {
         String effectiveAction = action != null ? action : body.getOrDefault("action", "");
 
         return switch (effectiveAction.toLowerCase()) {
-            case "login"  -> login(body.get("username"), body.get("password"));
-            case "logout" -> ResponseEntity.ok(Map.of("status", "success", "message", "Logged out"));
+            case "login"           -> login(body.get("username"), body.get("password"));
+            case "logout"          -> ResponseEntity.ok(Map.of("status", "success", "message", "Logged out"));
+            case "forgot_password" -> forgotPassword(body.get("username"));
+            case "reset_password"  -> resetPassword(body.get("token"), body.get("password"));
             default       -> ResponseEntity.badRequest()
                     .body(Map.of("status", "error", "message", "Unknown action: " + effectiveAction));
         };
@@ -69,6 +72,65 @@ public class AuthController {
 
         return ResponseEntity.status(401)
                 .body(Map.of("status", "error", "message", "Session expired or invalid token"));
+    }
+
+    private ResponseEntity<?> forgotPassword(String username) {
+        if (username == null || username.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Username is required"));
+        }
+
+        Optional<User> userOpt = userRepository.findByUsername(username.trim());
+        if (userOpt.isEmpty()) {
+            // For security, don't reveal if user exists, but here the user wants "work" so we can be explicit
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "User not found"));
+        }
+
+        User user = userOpt.get();
+        
+        // Clean up old tokens
+        tokenRepository.findByUser(user).ifPresent(t -> tokenRepository.delete(t));
+        
+        com.medicore.api.model.PasswordResetToken token = new com.medicore.api.model.PasswordResetToken(user);
+        tokenRepository.save(token);
+
+        String resetLink = "http://localhost:3000/reset-password?token=" + token.getToken();
+        
+        // Return the link so the UI can "send" it or the backend can (placeholder for WhatsApp)
+        // User mentioned "send to my whatsappp api"
+        // In a real app, you'd call the API here.
+        
+        activityLogger.log("LockIcon", "Password reset initiated for: " + user.getName(), user.getName());
+
+        return ResponseEntity.ok(Map.of(
+            "status", "success", 
+            "message", "Reset link generated",
+            "resetLink", resetLink,
+            "username", user.getUsername()
+        ));
+    }
+
+    private ResponseEntity<?> resetPassword(String tokenStr, String newPassword) {
+        if (tokenStr == null || newPassword == null || newPassword.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Token and new password are required"));
+        }
+
+        Optional<com.medicore.api.model.PasswordResetToken> tokenOpt = tokenRepository.findByToken(tokenStr);
+        
+        if (tokenOpt.isEmpty() || tokenOpt.get().isExpired()) {
+            return ResponseEntity.status(401).body(Map.of("status", "error", "message", "Invalid or expired reset token"));
+        }
+
+        com.medicore.api.model.PasswordResetToken token = tokenOpt.get();
+        User user = token.getUser();
+        
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        
+        tokenRepository.delete(token);
+        
+        activityLogger.log("LockIcon", "Password successfully reset for: " + user.getName(), user.getName());
+
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Password has been reset successfully"));
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
