@@ -15,21 +15,28 @@ public class WhatsAppService {
     public void sendMessage(String phone, String text) {
         if (phone == null || phone.isEmpty()) return;
 
-        // Ensure phone is in international format (e.g., 254...)
-        String formattedPhone = phone.replace("+", "").replace(" ", "");
+        // Normalize phone: remove non-digits
+        String formattedPhone = phone.replaceAll("[^0-9]", "");
+        
+        // Convert local Kenyan format (07...) to international (2547...)
+        if (formattedPhone.startsWith("0")) {
+            formattedPhone = "254" + formattedPhone.substring(1);
+        }
 
+        final String finalPhone = formattedPhone;
         new Thread(() -> {
             try {
+                System.out.println("Attempting to send WhatsApp to: " + finalPhone);
                 URL url = new URL(API_URL);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("x-api-key", API_KEY); // Assuming it might be in header or part of body if not specified
-                // The user didn't specify where the API key goes. Usually it's a header or part of the URL.
-                // Let's check the payload again.
+                conn.setRequestProperty("x-api-key", API_KEY);
                 conn.setDoOutput(true);
 
-                String jsonInputString = String.format("{\"phone\": \"%s\", \"text\": \"%s\"}", formattedPhone, text);
+                // Manual JSON building to avoid external dependencies, with basic escaping
+                String escapedText = text.replace("\"", "\\\"").replace("\n", "\\n");
+                String jsonInputString = "{\"phone\": \"" + finalPhone + "\", \"text\": \"" + escapedText + "\"}";
 
                 try (OutputStream os = conn.getOutputStream()) {
                     byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
@@ -38,8 +45,17 @@ public class WhatsAppService {
 
                 int code = conn.getResponseCode();
                 System.out.println("WhatsApp API Response Code: " + code);
+                
+                if (code >= 400) {
+                    try (java.util.Scanner s = new java.util.Scanner(conn.getErrorStream())) {
+                        String error = s.useDelimiter("\\A").hasNext() ? s.next() : "";
+                        System.err.println("WhatsApp API Error Detail: " + error);
+                    }
+                }
+                
                 conn.disconnect();
             } catch (Exception e) {
+                System.err.println("WhatsApp Dispatch Failed: " + e.getMessage());
                 e.printStackTrace();
             }
         }).start();

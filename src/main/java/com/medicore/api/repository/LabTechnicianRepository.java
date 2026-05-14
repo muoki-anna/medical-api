@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LabTechnicianRepository extends JpaRepository<LabTechnician, Long> {
+    java.util.Optional<com.medicore.api.model.LabTechnician> findByUser(com.medicore.api.model.User user);
 }

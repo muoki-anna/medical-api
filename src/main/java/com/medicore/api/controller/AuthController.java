@@ -28,6 +28,12 @@ public class AuthController {
     private NurseRepository nurseRepository;
 
     @Autowired
+    private PatientRepository patientRepository;
+
+    @Autowired
+    private LabTechnicianRepository labTechnicianRepository;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
@@ -98,10 +104,24 @@ public class AuthController {
 
         String resetLink = "http://localhost:3000/reset-password?token=" + token.getToken();
         
+        // Resolve phone number (User -> Doctor/Nurse/Patient fallback)
+        String phone = user.getPhone();
+        if (phone == null || phone.isEmpty()) {
+            if (user.getRole() == User.Role.DOCTOR) {
+                phone = doctorRepository.findByUser(user).map(d -> d.getPhone()).orElse(null);
+            } else if (user.getRole() == User.Role.NURSE) {
+                phone = nurseRepository.findByUser(user).map(n -> n.getPhone()).orElse(null);
+            } else if (user.getRole() == User.Role.PATIENT) {
+                phone = patientRepository.findByUser(user).map(p -> p.getContact()).orElse(null);
+            } else if (user.getRole() == User.Role.LABTECH) {
+                phone = labTechnicianRepository.findByUser(user).map(l -> l.getPhone()).orElse(null);
+            }
+        }
+
         // Send via WhatsApp API
-        if (user.getPhone() != null && !user.getPhone().isEmpty()) {
+        if (phone != null && !phone.isEmpty()) {
             String message = "MediCore Clinical Access Recovery:\n\nPlease use the link below to set your new security key:\n" + resetLink + "\n\n(Expires in 1 hour)";
-            whatsappService.sendMessage(user.getPhone(), message);
+            whatsappService.sendMessage(phone, message);
         }
         
         activityLogger.log("LockIcon", "Password reset initiated for: " + user.getName(), user.getName());

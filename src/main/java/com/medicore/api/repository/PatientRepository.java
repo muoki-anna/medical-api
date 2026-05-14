@@ -7,4 +7,5 @@ import java.util.List;
 public interface PatientRepository extends JpaRepository<Patient, Long> {
     List<Patient> findByAssignedDoctorId(Long doctorId);
     List<Patient> findByNameContainingIgnoreCase(String name);
+    java.util.Optional<com.medicore.api.model.Patient> findByUser(com.medicore.api.model.User user);
 }
