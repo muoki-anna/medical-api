@@ -48,9 +48,18 @@ public class ClinicalAuditInterceptor implements HandlerInterceptor {
 
     private Object[] translatePathToAction(String method, String path, String user) {
         if (method.equals("GET")) {
-            if (path.endsWith("/patients") || path.contains("/patient/")) 
+            if (path.endsWith("/patients") || path.contains("/patients/search")) 
                 return new Object[]{"PersonIcon", user + " accessed Patient Registry"};
             
+            if (path.endsWith("/doctors")) 
+                return new Object[]{"PersonIcon", user + " accessed Medical Staff (Doctors) Directory"};
+            
+            if (path.endsWith("/nurses")) 
+                return new Object[]{"PersonIcon", user + " accessed Nursing Staff Directory"};
+            
+            if (path.endsWith("/labtechs")) 
+                return new Object[]{"PersonIcon", user + " accessed Laboratory Staff Directory"};
+
             if (path.endsWith("/appointments")) 
                 return new Object[]{"CalendarIcon", user + " viewed Clinical Schedule"};
             
@@ -70,7 +79,7 @@ public class ClinicalAuditInterceptor implements HandlerInterceptor {
                 return new Object[]{"DollarIcon", user + " accessed Financial Records"};
             
             if (path.endsWith("/users") || path.contains("/staff")) 
-                return new Object[]{"PersonIcon", user + " accessed Human Resources/Staff Management"};
+                return new Object[]{"PersonIcon", user + " accessed Human Resources Management"};
             
             if (path.contains("/dashboard")) 
                 return new Object[]{"MonitorIcon", user + " viewed Operational Dashboard"};
@@ -89,7 +98,8 @@ public class ClinicalAuditInterceptor implements HandlerInterceptor {
             
         } else if (method.equals("POST") || method.equals("PUT") || method.equals("PATCH")) {
             String resource = path.substring(path.lastIndexOf("/") + 1);
-            return new Object[]{"EditIcon", user + " updated " + resource + " record"};
+            if (resource.isEmpty() || resource.length() < 2) resource = "record";
+            return new Object[]{"EditIcon", user + " modified " + resource + " data"};
         } else if (method.equals("DELETE")) {
             String resource = path.substring(path.lastIndexOf("/") + 1);
             return new Object[]{"TrashIcon", user + " removed " + resource + " from system"};
