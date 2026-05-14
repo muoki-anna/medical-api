@@ -14,6 +14,14 @@ public class ActivityLogger {
     private ActivityRepository activityRepository;
 
     public void log(String icon, String description, String patientName) {
+        // Prevent exact duplicates within a short timeframe (e.g. page refresh)
+        Activity lastActivity = activityRepository.findTopByOrderByIdDesc();
+        if (lastActivity != null && 
+            lastActivity.getDescription().equals(description) && 
+            lastActivity.getPatientName().equals(patientName)) {
+            return; // Skip duplicate
+        }
+
         Activity activity = new Activity();
         activity.setIcon(icon);
         activity.setDescription(description);
