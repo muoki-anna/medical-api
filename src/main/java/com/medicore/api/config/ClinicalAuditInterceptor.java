@@ -38,30 +38,62 @@ public class ClinicalAuditInterceptor implements HandlerInterceptor {
             }
 
             // Map common API paths to human-readable actions
-            String description = translatePathToAction(method, path, displayName);
-            if (description != null) {
-                activityLogger.log("ActivityIcon", description, displayName);
+            Object[] result = translatePathToAction(method, path, displayName);
+            if (result != null) {
+                activityLogger.log((String)result[0], (String)result[1], displayName);
             }
         }
         return true;
     }
 
-    private String translatePathToAction(String method, String path, String user) {
+    private Object[] translatePathToAction(String method, String path, String user) {
         if (method.equals("GET")) {
-            if (path.endsWith("/patients")) return user + " accessed Patient Registry";
-            if (path.endsWith("/appointments")) return user + " viewed Clinical Schedule";
-            if (path.endsWith("/wards")) return user + " checked Ward Occupancy";
-            if (path.endsWith("/vitals")) return user + " reviewed Patient Vitals";
-            if (path.endsWith("/lab-requests") || path.contains("/labtech/queue")) return user + " accessed Lab Diagnostic Queue";
-            if (path.endsWith("/prescriptions")) return user + " reviewed Pharmacological Protocols";
-            if (path.endsWith("/billing/invoices")) return user + " accessed Financial Records";
-            if (path.endsWith("/users")) return user + " accessed User Management";
-            if (path.contains("/dashboard")) return user + " viewed Operational Dashboard";
+            if (path.endsWith("/patients") || path.contains("/patient/")) 
+                return new Object[]{"PersonIcon", user + " accessed Patient Registry"};
+            
+            if (path.endsWith("/appointments")) 
+                return new Object[]{"CalendarIcon", user + " viewed Clinical Schedule"};
+            
+            if (path.endsWith("/wards")) 
+                return new Object[]{"BedIcon", user + " checked Ward Occupancy"};
+            
+            if (path.endsWith("/vitals")) 
+                return new Object[]{"ActivityIcon", user + " reviewed Patient Vitals"};
+            
+            if (path.endsWith("/lab-requests") || path.contains("/labtech/")) 
+                return new Object[]{"FlaskIcon", user + " accessed Lab Diagnostic Queue"};
+            
+            if (path.endsWith("/prescriptions")) 
+                return new Object[]{"PillIcon", user + " reviewed Pharmacological Protocols"};
+            
+            if (path.contains("/billing")) 
+                return new Object[]{"DollarIcon", user + " accessed Financial Records"};
+            
+            if (path.endsWith("/users") || path.contains("/staff")) 
+                return new Object[]{"PersonIcon", user + " accessed Human Resources/Staff Management"};
+            
+            if (path.contains("/dashboard")) 
+                return new Object[]{"MonitorIcon", user + " viewed Operational Dashboard"};
+            
+            if (path.contains("/inventory")) 
+                return new Object[]{"PackageIcon", user + " checked Medical Inventory"};
+            
+            if (path.contains("/reports")) 
+                return new Object[]{"ReportIcon", user + " generated System Reports"};
+            
+            if (path.contains("/nurse-tasks")) 
+                return new Object[]{"QueueIcon", user + " reviewed Nursing Task List"};
+            
+            if (path.contains("/settings")) 
+                return new Object[]{"SettingsIcon", user + " accessed System Settings"};
+            
         } else if (method.equals("POST") || method.equals("PUT") || method.equals("PATCH")) {
-            return user + " initiated a " + method + " operation on " + path;
+            String resource = path.substring(path.lastIndexOf("/") + 1);
+            return new Object[]{"EditIcon", user + " updated " + resource + " record"};
         } else if (method.equals("DELETE")) {
-            return user + " deleted a record from " + path;
+            String resource = path.substring(path.lastIndexOf("/") + 1);
+            return new Object[]{"TrashIcon", user + " removed " + resource + " from system"};
         }
-        return null; // Don't log everything to avoid noise
+        return null;
     }
 }
