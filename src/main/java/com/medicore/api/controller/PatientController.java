@@ -5,7 +5,6 @@ import com.medicore.api.model.User;
 import com.medicore.api.model.Activity;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.UserRepository;
-import com.medicore.api.model.Ward;
 import com.medicore.api.repository.WardRepository;
 import com.medicore.api.repository.ActivityRepository;
 import com.medicore.api.repository.DoctorRepository;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")

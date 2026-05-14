@@ -1,6 +1,4 @@
 package com.medicore.api.controller;
-
-import com.medicore.api.model.Billing;
 import com.medicore.api.model.ReportArtifact;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.AppointmentRepository;
