@@ -69,6 +69,7 @@ public class StaffController {
             user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
+        user.setPhone(body.get("phone"));
         user.setRole(User.Role.DOCTOR);
         user = userRepository.save(user);
 
@@ -139,6 +140,7 @@ public class StaffController {
             user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
+        user.setPhone(body.get("phone"));
         user.setRole(User.Role.NURSE);
         user = userRepository.save(user);
 
@@ -214,6 +216,7 @@ public class StaffController {
             user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
+        user.setPhone(body.get("phone"));
         user.setRole(User.Role.LABTECH);
         user = userRepository.save(user);
 

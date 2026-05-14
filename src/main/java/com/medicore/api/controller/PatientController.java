@@ -97,6 +97,7 @@ public class PatientController {
             }
             user.setRole(User.Role.PATIENT);
             user.setEmail(body.get("email"));
+            user.setPhone(body.get("contact"));
             user = userRepository.save(user);
             patient.setUser(user);
         }

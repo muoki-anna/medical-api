@@ -37,6 +37,9 @@ public class AuthController {
     private PasswordResetTokenRepository tokenRepository;
 
     @Autowired
+    private com.medicore.api.util.WhatsAppService whatsappService;
+
+    @Autowired
     private ActivityLogger activityLogger;
 
     // ── POST /api/auth  (login + body-based actions) ──────────────────────
@@ -95,9 +98,11 @@ public class AuthController {
 
         String resetLink = "http://localhost:3000/reset-password?token=" + token.getToken();
         
-        // Return the link so the UI can "send" it or the backend can (placeholder for WhatsApp)
-        // User mentioned "send to my whatsappp api"
-        // In a real app, you'd call the API here.
+        // Send via WhatsApp API
+        if (user.getPhone() != null && !user.getPhone().isEmpty()) {
+            String message = "MediCore Clinical Access Recovery:\n\nPlease use the link below to set your new security key:\n" + resetLink + "\n\n(Expires in 1 hour)";
+            whatsappService.sendMessage(user.getPhone(), message);
+        }
         
         activityLogger.log("LockIcon", "Password reset initiated for: " + user.getName(), user.getName());
 
