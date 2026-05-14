@@ -24,4 +24,15 @@ public class ActivityController {
                 .toList();
         return ResponseEntity.ok(Map.of("status", "success", "data", activities));
     }
+
+    @PostMapping("/activities")
+    public ResponseEntity<?> createActivity(@RequestBody Map<String, String> body) {
+        Activity activity = new Activity();
+        activity.setIcon(body.getOrDefault("icon", "ActivityIcon"));
+        activity.setDescription(body.get("description"));
+        activity.setPatientName(body.get("patientName"));
+        activity.setActionDate(java.time.LocalDate.now());
+        activityRepository.save(activity);
+        return ResponseEntity.ok(Map.of("status", "success", "message", "Activity logged"));
+    }
 }

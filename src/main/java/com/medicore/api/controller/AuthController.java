@@ -4,6 +4,7 @@ import com.medicore.api.model.User;
 import com.medicore.api.repository.UserRepository;
 import com.medicore.api.repository.DoctorRepository;
 import com.medicore.api.repository.NurseRepository;
+import com.medicore.api.util.ActivityLogger;
 import com.medicore.api.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,9 @@ public class AuthController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     // ── POST /api/auth  (login + body-based actions) ──────────────────────
     @PostMapping("/auth")
@@ -79,6 +83,12 @@ public class AuthController {
         if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
             User user = userOpt.get();
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+
+            activityLogger.log(
+                "LockIcon",
+                "User session started: " + user.getName() + " (" + user.getRole() + ")",
+                user.getName()
+            );
 
             Map<String, Object> userData = new HashMap<>();
             userData.put("id",       user.getId());
