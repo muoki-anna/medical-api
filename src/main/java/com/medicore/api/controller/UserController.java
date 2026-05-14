@@ -32,7 +32,19 @@ public class UserController {
         } else {
             users = userRepository.findAll();
         }
-        return ResponseEntity.ok(Map.of("status", "success", "data", users));
+        List<Map<String, Object>> safeUsers = users.stream().map(u -> {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("id", u.getId());
+            m.put("name", u.getName());
+            m.put("username", u.getUsername());
+            m.put("email", u.getEmail());
+            m.put("phone", u.getPhone());
+            m.put("role", u.getRole());
+            m.put("status", u.getStatus());
+            m.put("createdAt", u.getCreatedAt());
+            return m;
+        }).toList();
+        return ResponseEntity.ok(Map.of("status", "success", "data", safeUsers));
     }
 
     @PostMapping("/users")
