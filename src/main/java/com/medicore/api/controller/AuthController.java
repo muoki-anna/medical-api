@@ -106,10 +106,15 @@ public class AuthController {
         
         activityLogger.log("LockIcon", "Password reset initiated for: " + user.getName(), user.getName());
 
+        String maskedPhone = "********";
+        if (user.getPhone() != null && user.getPhone().length() > 6) {
+            maskedPhone = user.getPhone().substring(0, 4) + "****" + user.getPhone().substring(user.getPhone().length() - 3);
+        }
+
         return ResponseEntity.ok(Map.of(
             "status", "success", 
-            "message", "Reset link generated",
-            "resetLink", resetLink,
+            "message", "Reset link dispatched",
+            "phone", maskedPhone,
             "username", user.getUsername()
         ));
     }
