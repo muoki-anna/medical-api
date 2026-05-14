@@ -5,6 +5,7 @@ import com.medicore.api.model.Patient;
 import com.medicore.api.repository.NurseTaskRepository;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.NurseRepository;
+import com.medicore.api.util.ActivityLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,9 @@ public class NurseTaskController {
 
     @Autowired
     private NurseTaskRepository nurseTaskRepository;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     @GetMapping("/nurse-tasks")
     public ResponseEntity<?> getTasks(@RequestParam(required = false) String nurseId) {
@@ -143,6 +147,13 @@ public class NurseTaskController {
             }
 
             nurseTaskRepository.save(task);
+            
+            activityLogger.log(
+                "ActivityIcon",
+                "Clinical task updated: [" + task.getStatus() + "] " + task.getDescription() + " for " + (task.getPatient() != null ? task.getPatient().getName() : "General Ward"),
+                task.getPatient() != null ? task.getPatient().getName() : "General Ward"
+            );
+
             return ResponseEntity.ok(Map.of("status", "success", "data", task));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", "Processing error: " + e.getMessage()));

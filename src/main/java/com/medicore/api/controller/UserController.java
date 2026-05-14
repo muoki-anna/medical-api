@@ -4,6 +4,7 @@ import com.medicore.api.model.User;
 import com.medicore.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,9 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/users")
     public ResponseEntity<?> getUsers(@RequestParam(required = false) String role) {
@@ -41,7 +45,7 @@ public class UserController {
                 u.setName(user.getName());
                 u.setUsername(user.getUsername());
                 if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-                    u.setPassword(user.getPassword());
+                    u.setPassword(passwordEncoder.encode(user.getPassword()));
                 }
                 u.setEmail(user.getEmail());
                 u.setRole(user.getRole());
@@ -52,6 +56,9 @@ public class UserController {
         }
         
         // If creating
+        if (user.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("status", "success", "message", "User created successfully"));
     }

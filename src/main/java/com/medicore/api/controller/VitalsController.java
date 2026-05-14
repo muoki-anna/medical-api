@@ -4,6 +4,7 @@ import com.medicore.api.model.Patient;
 import com.medicore.api.model.Vitals;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.VitalsRepository;
+import com.medicore.api.util.ActivityLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +25,9 @@ public class VitalsController {
 
     @Autowired
     private PatientRepository patientRepository;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     @GetMapping("/vitals")
     public ResponseEntity<?> getVitals(@RequestParam(required = false) Long patientId) {
@@ -77,8 +81,13 @@ public class VitalsController {
             vitals.setWeight(parseSafeDouble(body.get("weight"), 0.0));
             
             vitals.setMeasuredAt(LocalDateTime.now());
-            
             vitalsRepository.save(vitals);
+            
+            activityLogger.log(
+                "ActivityIcon",
+                "Clinical vitals recorded: BP " + vitals.getBp() + ", HR " + vitals.getHr() + " for " + patient.getName(),
+                patient.getName()
+            );
             return ResponseEntity.ok(Map.of("status", "success", "message", "Vitals recorded successfully", "data", vitals));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of("status", "error", "message", "Processing error: " + e.getMessage()));

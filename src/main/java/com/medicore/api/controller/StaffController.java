@@ -4,6 +4,7 @@ import com.medicore.api.model.*;
 import com.medicore.api.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -25,6 +26,8 @@ public class StaffController {
     private UserRepository userRepository;
     @Autowired
     private WardRepository wardRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // --- DOCTORS ---
 
@@ -63,7 +66,7 @@ public class StaffController {
         user.setName(body.get("name"));
         user.setUsername(body.get("username"));
         if (body.get("password") != null && !body.get("password").isEmpty()) {
-            user.setPassword(body.get("password"));
+            user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
         user.setRole(User.Role.DOCTOR);
@@ -133,7 +136,7 @@ public class StaffController {
         user.setName(body.get("name"));
         user.setUsername(body.get("username"));
         if (body.get("password") != null && !body.get("password").isEmpty()) {
-            user.setPassword(body.get("password"));
+            user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
         user.setRole(User.Role.NURSE);
@@ -208,7 +211,7 @@ public class StaffController {
         user.setName(body.get("name"));
         user.setUsername(body.get("username"));
         if (body.get("password") != null && !body.get("password").isEmpty()) {
-            user.setPassword(body.get("password"));
+            user.setPassword(passwordEncoder.encode(body.get("password")));
         }
         user.setEmail(body.get("email"));
         user.setRole(User.Role.LABTECH);

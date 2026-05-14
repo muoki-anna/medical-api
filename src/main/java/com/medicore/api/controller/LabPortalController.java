@@ -2,6 +2,7 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.LabTest;
 import com.medicore.api.repository.LabTestRepository;
+import com.medicore.api.util.ActivityLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +19,9 @@ public class LabPortalController {
 
     @Autowired
     private LabTestRepository labTestRepository;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     @GetMapping("/queue")
     public ResponseEntity<?> getQueue(@RequestParam(required = false) Long patientId) {
@@ -55,6 +59,12 @@ public class LabPortalController {
         request.setResult(result);
         request.setStatus(status);
         labTestRepository.save(request);
+        
+        activityLogger.log(
+            "FlaskIcon",
+            "Diagnostic results verified: " + request.getTestType() + " for " + (request.getPatient() != null ? request.getPatient().getName() : "Patient"),
+            request.getPatient() != null ? request.getPatient().getName() : "Patient"
+        );
         
         return ResponseEntity.ok(Map.of("status", "success", "message", "Results updated"));
     }

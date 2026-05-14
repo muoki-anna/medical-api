@@ -7,6 +7,7 @@ import com.medicore.api.repository.NurseRepository;
 import com.medicore.api.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -29,6 +30,9 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     // ── POST /api/auth  (login + body-based actions) ──────────────────────
     @PostMapping("/auth")
@@ -72,7 +76,7 @@ public class AuthController {
 
         Optional<User> userOpt = userRepository.findByUsername(username.trim());
 
-        if (userOpt.isPresent() && userOpt.get().getPassword().equals(password)) {
+        if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
             User user = userOpt.get();
             String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
 

@@ -2,6 +2,7 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.Appointment;
 import com.medicore.api.repository.*;
+import com.medicore.api.util.ActivityLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,9 @@ public class AppointmentController {
 
     @Autowired
     private DoctorRepository doctorRepository;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     @GetMapping("/appointments")
     public ResponseEntity<?> getAppointments(
@@ -125,6 +129,13 @@ public class AppointmentController {
             }
 
             Appointment saved = appointmentRepository.save(appointment);
+            
+            activityLogger.log(
+                "CalendarIcon",
+                "New clinical encounter requested for: " + (appointment.getPatient() != null ? appointment.getPatient().getName() : "Unknown"),
+                appointment.getPatient() != null ? appointment.getPatient().getName() : "Unknown"
+            );
+
             return ResponseEntity.ok(Map.of("status", "success", "data", saved));
         } catch (java.time.format.DateTimeParseException e) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid temporal format: " + e.getMessage()));
@@ -141,6 +152,12 @@ public class AppointmentController {
             if (newStatus != null && !newStatus.isBlank()) {
                 appt.setStatus(newStatus);
                 appointmentRepository.save(appt);
+                
+                activityLogger.log(
+                    "ActivityIcon",
+                    "Appointment status transitioned to " + newStatus + " for " + (appt.getPatient() != null ? appt.getPatient().getName() : "Unknown"),
+                    appt.getPatient() != null ? appt.getPatient().getName() : "Unknown"
+                );
             }
             return ResponseEntity.ok(Map.of("status", "success", "message", "Appointment status updated to " + newStatus));
         }).orElse(ResponseEntity.notFound().build());

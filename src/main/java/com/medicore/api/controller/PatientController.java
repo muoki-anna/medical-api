@@ -2,14 +2,14 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.Patient;
 import com.medicore.api.model.User;
-import com.medicore.api.model.Activity;
 import com.medicore.api.repository.PatientRepository;
 import com.medicore.api.repository.UserRepository;
 import com.medicore.api.repository.WardRepository;
-import com.medicore.api.repository.ActivityRepository;
+import com.medicore.api.util.ActivityLogger;
 import com.medicore.api.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -34,7 +34,10 @@ public class PatientController {
     private DoctorRepository doctorRepository;
 
     @Autowired
-    private ActivityRepository activityRepository;
+    private ActivityLogger activityLogger;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients() {
@@ -90,7 +93,7 @@ public class PatientController {
             user.setName(body.get("name"));
             user.setUsername(username);
             if (body.get("password") != null && !body.get("password").isEmpty()) {
-                user.setPassword(body.get("password"));
+                user.setPassword(passwordEncoder.encode(body.get("password")));
             }
             user.setRole(User.Role.PATIENT);
             user.setEmail(body.get("email"));
@@ -133,11 +136,11 @@ public class PatientController {
         patientRepository.save(patient);
 
         // Log Activity
-        Activity activity = new Activity();
-        activity.setDescription(isNew ? "New patient registration: " + patient.getName() : "Patient record updated: " + patient.getName());
-        activity.setPatientName(patient.getName());
-        activity.setIcon(isNew ? "PlusIcon" : "EditIcon");
-        activityRepository.save(activity);
+        activityLogger.log(
+            isNew ? "PlusIcon" : "EditIcon",
+            isNew ? "New patient registration: " + patient.getName() : "Patient record updated: " + patient.getName(),
+            patient.getName()
+        );
 
         return ResponseEntity.ok(Map.of("status", "success", "message", "Patient saved successfully"));
     }

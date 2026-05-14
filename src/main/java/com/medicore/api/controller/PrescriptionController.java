@@ -2,6 +2,7 @@ package com.medicore.api.controller;
 
 import com.medicore.api.model.Prescription;
 import com.medicore.api.repository.PrescriptionRepository;
+import com.medicore.api.util.ActivityLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,9 @@ public class PrescriptionController {
 
     @Autowired
     private PrescriptionRepository prescriptionRepository;
+
+    @Autowired
+    private ActivityLogger activityLogger;
 
     @GetMapping("/prescriptions")
     public ResponseEntity<?> getPrescriptions(@RequestParam(required = false) Long patientId) {
@@ -36,8 +40,13 @@ public class PrescriptionController {
             if (p == null) return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Prescription not found"));
             
             p.setStatus("administered");
-            // In a real app, we'd log who administered it and when.
             prescriptionRepository.save(p);
+            
+            activityLogger.log(
+                "CrossMedicalIcon",
+                "Pharmacological protocol administered: " + p.getMedication() + " for " + (p.getPatient() != null ? p.getPatient().getName() : "Unknown"),
+                p.getPatient() != null ? p.getPatient().getName() : "Unknown"
+            );
             
             return ResponseEntity.ok(Map.of("status", "success", "message", "Medication administered"));
         } catch (Exception e) {
