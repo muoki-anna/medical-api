@@ -82,7 +82,7 @@ public class AuthController {
 
         if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
             User user = userOpt.get();
-            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
+            String token = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getName());
 
             activityLogger.log(
                 "LockIcon",

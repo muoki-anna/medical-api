@@ -25,21 +25,22 @@ public class ClinicalAuditInterceptor implements HandlerInterceptor {
         // Only log API calls, skip static assets or auth itself to avoid loops
         if (path.startsWith("/api") && !path.contains("/auth") && !path.contains("/activities")) {
             String authHeader = request.getHeader("Authorization");
-            String username = "System";
+            String displayName = "System";
 
             if (authHeader != null && authHeader.startsWith("Bearer ")) {
                 try {
                     String token = authHeader.substring(7);
-                    username = jwtUtil.extractUsername(token);
+                    displayName = jwtUtil.extractClaim(token, claims -> (String) claims.get("name"));
+                    if (displayName == null) displayName = jwtUtil.extractUsername(token);
                 } catch (Exception e) {
                     // Token might be invalid or expired, fallback to System
                 }
             }
 
             // Map common API paths to human-readable actions
-            String description = translatePathToAction(method, path, username);
+            String description = translatePathToAction(method, path, displayName);
             if (description != null) {
-                activityLogger.log("ActivityIcon", description, username);
+                activityLogger.log("ActivityIcon", description, displayName);
             }
         }
         return true;
