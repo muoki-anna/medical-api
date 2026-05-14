@@ -19,7 +19,9 @@ public class ActivityController {
 
     @GetMapping("/activities")
     public ResponseEntity<?> getActivities() {
-        List<Activity> activities = activityRepository.findAll();
+        List<Activity> activities = activityRepository.findAll().stream()
+                .sorted((a, b) -> Long.compare(b.getId(), a.getId()))
+                .toList();
         return ResponseEntity.ok(Map.of("status", "success", "data", activities));
     }
 }
