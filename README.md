@@ -17,4 +17,3 @@ This backend serves as the single source of truth for the entire MediCore health
 - **Spring Security**: Managed authentication and authorization flows.
 
 ---
-*Co-authored-by: Dennis Muuo <dennismuuo.dev@gmail.com>*

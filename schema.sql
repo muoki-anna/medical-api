@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Insert default admin user
+INSERT IGNORE INTO users (name, username, password, email, role, status) 
+VALUES ('Administrator', 'admin', '$2a$10$slYQmyNdGzin7olVN3p5be4DlH.PKZbv5H8KnzzVgXXbVxzy2k1pS', 'admin@medicore.com', 'ADMIN', 'active');
+
 -- 2. Wards table
 CREATE TABLE IF NOT EXISTS wards (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -241,90 +245,3 @@ CREATE INDEX idx_appointment_date ON appointments(appointment_date);
 CREATE INDEX idx_lab_test_status ON lab_tests(status);
 CREATE INDEX idx_activity_date ON activities(action_date);
 CREATE INDEX idx_billing_status ON billing(status);
-
--- ==========================================
--- SEEDING DATA
--- ==========================================
-
--- Admin
-INSERT IGNORE INTO users (name, username, password, role, status) 
-VALUES ('Main Admin', 'admin', 'admin.africa', 'ADMIN', 'active');
-
--- Wards
-INSERT IGNORE INTO wards (name, capacity, occupied, available) VALUES 
-('Ward A', 24, 14, 10), 
-('Ward B', 20, 12, 8), 
-('Ward C', 18, 8, 10), 
-('ICU', 8, 5, 3);
-
--- Doctors
-INSERT IGNORE INTO users (name, username, password, role, status, email) VALUES 
-('Dr. Amina Odhiambo', 'doctor', 'password123', 'DOCTOR', 'active', 'amina@medicore.ke'),
-('Dr. James Kariuki', 'jkariuki', 'password123', 'DOCTOR', 'active', 'james@medicore.ke'),
-('Dr. Sarah Njeri', 'snjeri', 'password123', 'DOCTOR', 'active', 'sarah@medicore.ke'),
-('Dr. Peter Mutua', 'pmutua', 'password123', 'DOCTOR', 'active', 'peter@medicore.ke'),
-('Dr. Lucy Akinyi', 'lakinyi', 'password123', 'DOCTOR', 'inactive', 'lucy@medicore.ke');
-
-INSERT IGNORE INTO doctors (user_id, name, specialization, email, phone, ward_id, status)
-SELECT u.id, u.name, 'Internal Medicine', u.email, '0712 345 678', w.id, 'active' FROM users u, wards w WHERE u.username = 'doctor' AND w.name = 'Ward A';
-INSERT IGNORE INTO doctors (user_id, name, specialization, email, phone, ward_id, status)
-SELECT u.id, u.name, 'Pediatrics', u.email, '0713 456 789', w.id, 'active' FROM users u, wards w WHERE u.username = 'jkariuki' AND w.name = 'Ward B';
-INSERT IGNORE INTO doctors (user_id, name, specialization, email, phone, ward_id, status)
-SELECT u.id, u.name, 'Surgery', u.email, '0714 567 890', w.id, 'active' FROM users u, wards w WHERE u.username = 'snjeri' AND w.name = 'Ward C';
-INSERT IGNORE INTO doctors (user_id, name, specialization, email, phone, ward_id, status)
-SELECT u.id, u.name, 'Cardiology', u.email, '0715 678 901', w.id, 'active' FROM users u, wards w WHERE u.username = 'pmutua' AND w.name = 'ICU';
-INSERT IGNORE INTO doctors (user_id, name, specialization, email, phone, ward_id, status)
-SELECT u.id, u.name, 'Neurology', u.email, '0716 789 012', w.id, 'inactive' FROM users u, wards w WHERE u.username = 'lakinyi' AND w.name = 'Ward A';
-
--- Nurses
-INSERT IGNORE INTO users (name, username, password, role, status, email) VALUES 
-('Patricia Wanjiku', 'pwanjiku', 'password123', 'NURSE', 'active', 'patricia@medicore.ke'),
-('Kevin Otieno', 'kotieno', 'password123', 'NURSE', 'active', 'kevin@medicore.ke'),
-('Mary Chebet', 'mchebet', 'password123', 'NURSE', 'active', 'mary@medicore.ke'),
-('John Mwenda', 'jmwenda', 'password123', 'NURSE', 'active', 'john@medicore.ke');
-
-INSERT IGNORE INTO nurses (user_id, name, email, phone, ward_id, shift, status)
-SELECT u.id, u.name, u.email, '0718 111 222', w.id, 'Morning', 'active' FROM users u, wards w WHERE u.username = 'pwanjiku' AND w.name = 'Ward A';
-INSERT IGNORE INTO nurses (user_id, name, email, phone, ward_id, shift, status)
-SELECT u.id, u.name, u.email, '0718 222 333', w.id, 'Evening', 'active' FROM users u, wards w WHERE u.username = 'kotieno' AND w.name = 'Ward B';
-INSERT IGNORE INTO nurses (user_id, name, email, phone, ward_id, shift, status)
-SELECT u.id, u.name, u.email, '0718 333 444', w.id, 'Night', 'active' FROM users u, wards w WHERE u.username = 'mchebet' AND w.name = 'ICU';
-INSERT IGNORE INTO nurses (user_id, name, email, phone, ward_id, shift, status)
-SELECT u.id, u.name, u.email, '0718 444 555', w.id, 'Morning', 'active' FROM users u, wards w WHERE u.username = 'jmwenda' AND w.name = 'Ward C';
-
--- Lab Technicians
-INSERT IGNORE INTO users (name, username, password, role, status, email) VALUES 
-('Grace Muthoni', 'gmuthoni', 'password123', 'LABTECH', 'active', 'grace@medicore.ke'),
-('Samuel Kiprop', 'skiprop', 'password123', 'LABTECH', 'active', 'samuel@medicore.ke'),
-('Irene Waweru', 'iwaweru', 'password123', 'LABTECH', 'inactive', 'irene@medicore.ke');
-
-INSERT IGNORE INTO lab_technicians (user_id, name, email, phone, status)
-SELECT u.id, u.name, u.email, '0717 111 222', 'active' FROM users u WHERE u.username = 'gmuthoni';
-INSERT IGNORE INTO lab_technicians (user_id, name, email, phone, status)
-SELECT u.id, u.name, u.email, '0717 222 333', 'active' FROM users u WHERE u.username = 'skiprop';
-INSERT IGNORE INTO lab_technicians (user_id, name, email, phone, status)
-SELECT u.id, u.name, u.email, '0717 333 444', 'inactive' FROM users u WHERE u.username = 'iwaweru';
-
--- Patients
-INSERT IGNORE INTO patients (patient_code, name, age, gender, blood_type, diagnosis, ward_id, assigned_doctor_id, admission_date, status, contact, email, emergency_contact, emergency_phone, insurance_provider, policy_number, insurance_expiry)
-SELECT 'P001', 'Brian Mwangi', 34, 'Male', 'O+', 'Malaria', w.id, d.id, '2025-04-01', 'admitted', '0722 111 222', 'brian@email.com', 'Jane Mwangi', '0733 111 222', 'NHIF', 'NHF-2025-001', '2026-12-31' FROM wards w, doctors d WHERE w.name = 'Ward A' AND d.username = 'doctor';
-
-INSERT IGNORE INTO patients (patient_code, name, age, gender, blood_type, diagnosis, ward_id, assigned_doctor_id, admission_date, status, contact, email, emergency_contact, emergency_phone, insurance_provider, policy_number, insurance_expiry)
-SELECT 'P002', 'Cynthia Achieng', 28, 'Female', 'A+', 'Typhoid', w.id, d.id, '2025-04-03', 'admitted', '0722 222 333', 'cynthia@email.com', 'Paul Achieng', '0733 222 333', 'Jubilee', 'JUB-2025-045', '2025-11-30' FROM wards w, doctors d WHERE w.name = 'Ward B' AND d.username = 'jkariuki';
-
-INSERT IGNORE INTO patients (patient_code, name, age, gender, blood_type, diagnosis, ward_id, assigned_doctor_id, admission_date, status, contact, email, emergency_contact, emergency_phone, insurance_provider, policy_number, insurance_expiry)
-SELECT 'P003', 'David Kamau', 52, 'Male', 'B+', 'Hypertension', w.id, d.id, '2025-03-28', 'admitted', '0722 333 444', 'david@email.com', 'Ann Kamau', '0733 333 444', 'AAR', 'AAR-2025-112', '2026-06-15' FROM wards w, doctors d WHERE w.name = 'Ward A' AND d.username = 'doctor';
-
--- Inventory
-INSERT IGNORE INTO inventory (item_code, name, category, quantity, unit, reorder_level, status) VALUES 
-('INV001', 'Malaria RDT Kits', 'Diagnostics', 245, 'Tests', 100, 'In Stock'),
-('INV002', 'CBC Reagent', 'Hematology', 34, 'Bottles', 50, 'Low'),
-('INV003', 'Glucose Strips', 'Chemistry', 500, 'Strips', 200, 'In Stock'),
-('INV004', 'Urinalysis Strips', 'Chemistry', 0, 'Strips', 150, 'Out of Stock'),
-('INV005', 'X-Ray Film', 'Radiology', 89, 'Sheets', 50, 'In Stock');
-
--- Billboard (Activities)
-INSERT IGNORE INTO activities (icon, description, patient_name, action_date) VALUES 
-('general', 'Dr. Kariuki admitted Brian Mwangi', 'Brian Mwangi', '2025-04-18'),
-('meds', 'Prescription issued for David Kamau', 'David Kamau', '2025-04-18'),
-('vitals', 'Nurse Patricia recorded vitals for Ward A', 'Ward A', '2025-04-18');

@@ -14,6 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Insert default admin user
+INSERT IGNORE INTO users (name, username, password, email, role, status) 
+VALUES ('Administrator', 'admin', '$2a$10$slYQmyNdGzin7olVN3p5be4DlH.PKZbv5H8KnzzVgXXbVxzy2k1pS', 'admin@medicore.com', 'ADMIN', 'active');
+
 -- 2. Wards table
 CREATE TABLE IF NOT EXISTS wards (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,7 +155,9 @@ CREATE TABLE IF NOT EXISTS vitals (
     bp VARCHAR(20),
     hr INT,
     temp DECIMAL(4,1),
-    spo2 INT, rr INT, weight DECIMAL(5,2),
+    spo2 INT,
+    rr INT,
+    weight DECIMAL(5,2),
     measured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
 );
@@ -195,7 +201,22 @@ CREATE TABLE IF NOT EXISTS nurse_tasks (
     FOREIGN KEY (assigned_nurse_id) REFERENCES nurses(id) ON DELETE SET NULL
 );
 
--- 14. Activities table (Audit Log)
+-- 14. Medication Administration table
+CREATE TABLE IF NOT EXISTS medication_administration (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patient_id INT,
+    medication VARCHAR(255),
+    dose VARCHAR(100),
+    time_due TIME,
+    administered BOOLEAN DEFAULT FALSE,
+    administered_at DATETIME,
+    administered_by_id INT,
+    notes TEXT,
+    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
+    FOREIGN KEY (administered_by_id) REFERENCES nurses(id) ON DELETE SET NULL
+);
+
+-- 15. Activities table (Audit Log)
 CREATE TABLE IF NOT EXISTS activities (
     id INT AUTO_INCREMENT PRIMARY KEY,
     icon VARCHAR(50),
@@ -205,7 +226,7 @@ CREATE TABLE IF NOT EXISTS activities (
     action_date DATE
 );
 
--- 15. Doctor Notes table
+-- 16. Doctor Notes table
 CREATE TABLE IF NOT EXISTS doctor_notes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     patient_id INT,
@@ -216,3 +237,11 @@ CREATE TABLE IF NOT EXISTS doctor_notes (
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,
     FOREIGN KEY (doctor_id) REFERENCES doctors(id) ON DELETE CASCADE
 );
+
+-- 17. Explicit Indexes (Optimization)
+CREATE INDEX idx_user_role ON users(role);
+CREATE INDEX idx_patient_status ON patients(status);
+CREATE INDEX idx_appointment_date ON appointments(appointment_date);
+CREATE INDEX idx_lab_test_status ON lab_tests(status);
+CREATE INDEX idx_activity_date ON activities(action_date);
+CREATE INDEX idx_billing_status ON billing(status);
