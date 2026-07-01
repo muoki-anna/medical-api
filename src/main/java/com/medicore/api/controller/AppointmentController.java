@@ -26,7 +26,44 @@ public class AppointmentController {
     private DoctorRepository doctorRepository;
 
     @Autowired
+    private WhatsAppService whatsAppService;
+
+    @Autowired
     private ActivityLogger activityLogger;
+
+    private boolean notifyPatientAboutAppointment(Appointment appointment, String action) {
+        if (appointment == null || appointment.getPatient() == null) {
+            return false;
+        }
+
+        String phone = null;
+        if (appointment.getPatient().getContact() != null && !appointment.getPatient().getContact().isBlank()) {
+            phone = appointment.getPatient().getContact();
+        } else if (appointment.getPatient().getUser() != null && appointment.getPatient().getUser().getPhone() != null && !appointment.getPatient().getUser().getPhone().isBlank()) {
+            phone = appointment.getPatient().getUser().getPhone();
+        }
+
+        if (phone == null || phone.isBlank()) {
+            return false;
+        }
+
+        String doctorPart = appointment.getDoctor() != null ? "Doctor: " + appointment.getDoctor().getName() + ". " : "";
+        String date = appointment.getAppointmentDate() != null ? appointment.getAppointmentDate().toString() : "TBD";
+        String time = appointment.getAppointmentTime() != null ? appointment.getAppointmentTime().toString() : "TBD";
+        String department = appointment.getDepartment() != null && !appointment.getDepartment().isBlank() ? appointment.getDepartment() : "General";
+
+        String message;
+        if (appointment.getDoctor() == null) {
+            message = "Your appointment request has been received. A doctor will be assigned when available. " +
+                    "Date: " + date + ". Time: " + time + ". Department: " + department + ".";
+        } else {
+            message = "Your appointment has been " + action + ". " +
+                    doctorPart +
+                    "Date: " + date + ". Time: " + time + ". Department: " + department + ".";
+        }
+
+        return whatsAppService.sendMessage(phone, message);
+    }
 
     @GetMapping("/appointments")
     public ResponseEntity<?> getAppointments(
@@ -136,6 +173,8 @@ public class AppointmentController {
                 appointment.getPatient() != null ? appointment.getPatient().getName() : "Unknown"
             );
 
+            notifyPatientAboutAppointment(saved, "created");
+
             return ResponseEntity.ok(Map.of("status", "success", "data", saved));
         } catch (java.time.format.DateTimeParseException e) {
             return ResponseEntity.badRequest().body(Map.of("status", "error", "message", "Invalid temporal format: " + e.getMessage()));
@@ -169,6 +208,24 @@ public class AppointmentController {
             if (body.containsKey("status")) appt.setStatus((String) body.get("status"));
             if (body.containsKey("reason")) appt.setReason((String) body.get("reason"));
             if (body.containsKey("department")) appt.setDepartment((String) body.get("department"));
+
+            if (body.containsKey("doctor")) {
+                Object doctorObj = body.get("doctor");
+                String doctorIdStr = null;
+                if (doctorObj instanceof Map) {
+                    doctorIdStr = String.valueOf(((Map<?, ?>) doctorObj).get("id"));
+                } else if (body.get("doctorId") != null) {
+                    doctorIdStr = body.get("doctorId").toString();
+                }
+                if (doctorIdStr != null && !doctorIdStr.trim().isEmpty() && !"null".equals(doctorIdStr)) {
+                    try {
+                        doctorRepository.findById(Long.valueOf(doctorIdStr)).ifPresent(appt::setDoctor);
+                    } catch (NumberFormatException e) {
+                        System.err.println("[DEBUG] Invalid doctor ID format: " + doctorIdStr);
+                    }
+                }
+            }
+
             if (body.containsKey("date")) {
                 try { appt.setAppointmentDate(java.time.LocalDate.parse((String) body.get("date"))); } catch (Exception ignored) {}
             }
@@ -176,6 +233,7 @@ public class AppointmentController {
                 try { appt.setAppointmentTime(java.time.LocalTime.parse((String) body.get("time"))); } catch (Exception ignored) {}
             }
             appointmentRepository.save(appt);
+            notifyPatientAboutAppointment(appt, "updated");
             return ResponseEntity.ok(Map.of("status", "success", "message", "Appointment updated"));
         }).orElse(ResponseEntity.notFound().build());
     }
