@@ -106,7 +106,6 @@ public class PatientController {
         patient.setGender(body.get("gender"));
         patient.setContact(body.get("contact"));
         patient.setEmail(body.get("email"));
-        patient.setAddress(body.get("address"));
         patient.setStatus(body.getOrDefault("status", "outpatient"));
         
         // Auto-set admission date for tracking
