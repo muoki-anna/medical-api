@@ -3,6 +3,7 @@ package com.medicore.api.controller;
 import com.medicore.api.model.Appointment;
 import com.medicore.api.repository.*;
 import com.medicore.api.util.ActivityLogger;
+import com.medicore.api.util.WhatsAppService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
