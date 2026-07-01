@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
 INSERT IGNORE INTO users (name, username, password, email, role, status) 
 VALUES ('Administrator', 'admin', '$2a$10$slYQmyNdGzin7olVN3p5be4DlH.PKZbv5H8KnzzVgXXbVxzy2k1pS', 'admin@medicore.com', 'ADMIN', 'active');
 
+-- Insert second admin user for testing
+INSERT IGNORE INTO users (name, username, password, email, role, status) 
+VALUES ('System Manager', 'manager', '$2a$10$slYQmyNdGzin7olVN3p5be4DlH.PKZbv5H8KnzzVgXXbVxzy2k1pS', 'manager@medicore.com', 'ADMIN', 'active');
+
 -- 2. Wards table
 CREATE TABLE IF NOT EXISTS wards (
     id INT AUTO_INCREMENT PRIMARY KEY,

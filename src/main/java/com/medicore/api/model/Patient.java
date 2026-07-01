@@ -50,6 +50,7 @@ public class Patient {
 
     private String contact;
     private String email;
+    private String address;
 
     @Column(name = "emergency_contact")
     private String emergencyContact;
